@@ -2,6 +2,16 @@
 
 Production-style SaaS MVP for the internship assignment: flight search, seat selection, booking, reschedule, cancellation, Supabase Auth, Zustand persistence, and PWA support.
 
+Live: [aero-desk-eight.vercel.app](https://aero-desk-eight.vercel.app)
+
+## Lighthouse
+
+Google Lighthouse audit for the production deployment ([aero-desk-eight.vercel.app](https://aero-desk-eight.vercel.app)):
+
+| Desktop | Mobile |
+| --- | --- |
+| ![Lighthouse desktop — Performance 100, Accessibility 100, Best Practices 100, SEO 100](./public/lighthouse-web.png) | ![Lighthouse mobile — Performance 99, Accessibility 100, Best Practices 100, SEO 100](./public/lighthouse-mobile.png) |
+
 ## Stack
 
 - Next.js 14 App Router, TypeScript, Tailwind CSS
