@@ -1,12 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useFormState, useFormStatus } from "react-dom";
-import { initialAuthState, signIn, signUp } from "@/features/auth/server/actions";
+import { signIn, signUp } from "@/features/auth/server/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils/cn";
+import type { AuthState } from "@/features/auth/types";
+
+const initialAuthState: AuthState = {
+  status: "idle",
+  message: "",
+};
 
 function SubmitButton({ mode }: { mode: "signin" | "signup" }) {
   const { pending } = useFormStatus();
@@ -18,14 +25,19 @@ function SubmitButton({ mode }: { mode: "signin" | "signup" }) {
 }
 
 export function AuthForm({ next }: { next: string }) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
   const [toast, setToast] = useState<string | null>(null);
   const [signInState, signInAction] = useFormState(signIn, initialAuthState);
   const [signUpState, signUpAction] = useFormState(signUp, initialAuthState);
 
   useEffect(() => {
+    if (signInState.status === "success" && signInState.redirect) {
+      router.replace(signInState.redirect);
+      return;
+    }
     if (signInState.status === "error") setToast(signInState.message);
-  }, [signInState]);
+  }, [signInState, router]);
 
   useEffect(() => {
     if (signUpState.status === "success") {

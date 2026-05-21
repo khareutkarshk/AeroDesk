@@ -2,16 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-
-export type AuthState = {
-  status: "idle" | "success" | "error";
-  message: string;
-};
-
-export const initialAuthState: AuthState = {
-  status: "idle",
-  message: "",
-};
+import type { AuthState } from "@/features/auth/types";
 
 export async function signIn(_prevState: AuthState, formData: FormData): Promise<AuthState> {
   const email = String(formData.get("email") ?? "");
@@ -22,7 +13,7 @@ export async function signIn(_prevState: AuthState, formData: FormData): Promise
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) return { status: "error", message: error.message };
-  redirect(next);
+  return { status: "success", message: "", redirect: next };
 }
 
 export async function signUp(_prevState: AuthState, formData: FormData): Promise<AuthState> {
