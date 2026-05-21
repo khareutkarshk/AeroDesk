@@ -3,43 +3,68 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { passengerSchema } from "@/lib/validators/passenger";
+import { createBookingsSchema } from "@/lib/validators/booking";
+
+function parsePassengers(formData: FormData, passengerCount: number) {
+  const passengers = [];
+  for (let index = 0; index < passengerCount; index += 1) {
+    passengers.push({
+      seatId: formData.get(`passengers[${index}][seatId]`),
+      fullName: formData.get(`passengers[${index}][fullName]`),
+      passportNo: formData.get(`passengers[${index}][passportNo]`),
+      nationality: formData.get(`passengers[${index}][nationality]`),
+      dob: formData.get(`passengers[${index}][dob]`),
+    });
+  }
+  return passengers;
+}
 
 export async function createBooking(_prevState: string | null, formData: FormData) {
   const flightId = String(formData.get("flightId") ?? "");
-  const seatId = String(formData.get("seatId") ?? "");
-  const parsed = passengerSchema.safeParse({
-    fullName: formData.get("fullName"),
-    passportNo: formData.get("passportNo"),
-    nationality: formData.get("nationality"),
-    dob: formData.get("dob"),
+  const passengerCount = Number(formData.get("passengerCount") ?? 1);
+  const parsed = createBookingsSchema.safeParse({
+    flightId,
+    passengers: parsePassengers(formData, passengerCount),
   });
 
-  if (!flightId || !seatId) return "Select an available seat.";
-  if (!parsed.success) return parsed.error.issues[0]?.message ?? "Passenger details are invalid.";
+  if (!parsed.success) {
+    return parsed.error.issues[0]?.message ?? "Booking details are invalid.";
+  }
+
+  const { passengers } = parsed.data;
+  const seatIds = passengers.map((entry) => entry.seatId);
+  if (new Set(seatIds).size !== seatIds.length) {
+    return "Each passenger must have a different seat.";
+  }
 
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect(`/login?next=/checkout?flightId=${flightId}`);
+  if (!user) redirect(`/login?next=/checkout?flightId=${flightId}&passengers=${passengers.length}`);
 
-  const { data, error } = await supabase.rpc("reserve_seat", {
+  const { data, error } = await supabase.rpc("reserve_seats", {
     p_flight_id: flightId,
-    p_seat_id: seatId,
-    p_passenger_full_name: parsed.data.fullName,
-    p_passport_no: parsed.data.passportNo,
-    p_nationality: parsed.data.nationality,
-    p_dob: parsed.data.dob,
+    p_bookings: passengers.map((entry) => ({
+      seat_id: entry.seatId,
+      full_name: entry.fullName,
+      passport_no: entry.passportNo,
+      nationality: entry.nationality,
+      dob: entry.dob,
+    })),
   });
 
   if (error) return error.message;
-  const booking = data.at(0);
-  if (!booking) return "Booking could not be created.";
+  if (!data?.length) return "Booking could not be created.";
 
   revalidatePath("/bookings");
-  redirect(`/confirmation?bookingId=${booking.booking_id}`);
+
+  if (data.length === 1) {
+    redirect(`/confirmation?bookingId=${data[0].booking_id}`);
+  }
+
+  redirect(`/bookings?confirmed=${data.length}`);
 }
 
 export async function cancelBooking(bookingId: string) {

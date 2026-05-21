@@ -41,7 +41,12 @@ type RawBooking = {
     | { full_name: string; nationality: string; dob: string }[];
 };
 
-export default async function BookingsPage() {
+export default async function BookingsPage({
+  searchParams,
+}: {
+  searchParams: { confirmed?: string };
+}) {
+  const confirmedCount = Number(searchParams.confirmed ?? 0);
   const { data, error } = await getMyBookings();
   const rawBookings = (data ?? []) as unknown as RawBooking[];
   const bookings = rawBookings.map(toBookingCardData);
@@ -60,6 +65,11 @@ export default async function BookingsPage() {
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-teal-700">Trips</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">My bookings</h1>
         </div>
+        {confirmedCount > 1 ? (
+          <p className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+            {confirmedCount} bookings confirmed. Each passenger has a separate PNR below.
+          </p>
+        ) : null}
         {error ? (
           <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {error.message}

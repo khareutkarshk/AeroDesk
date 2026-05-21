@@ -44,9 +44,19 @@ Required env:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SITE_URL=https://your-production-domain.vercel.app
 SUPABASE_ACCESS_TOKEN=
 SUPABASE_PROJECT_REF=
 ```
+
+`NEXT_PUBLIC_SITE_URL` must match your deployed origin (no trailing slash). Vercel sets `VERCEL_URL` automatically, but set `NEXT_PUBLIC_SITE_URL` when using a custom domain.
+
+In **Supabase Dashboard → Authentication → URL configuration**:
+
+- **Site URL**: your production URL (e.g. `https://aero-desk-eight.vercel.app`)
+- **Redirect URLs**: add both production and local callback URLs:
+  - `https://aero-desk-eight.vercel.app/auth/callback`
+  - `http://localhost:3000/auth/callback`
 
 Create a test user in Supabase Auth:
 

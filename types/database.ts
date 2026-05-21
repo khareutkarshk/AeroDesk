@@ -176,6 +176,19 @@ export type Database = {
         };
         Returns: { booking_id: string; pnr_code: string; total_price: number }[];
       };
+      reserve_seats: {
+        Args: {
+          p_flight_id: string;
+          p_bookings: {
+            seat_id: string;
+            full_name: string;
+            passport_no: string;
+            nationality: string;
+            dob: string;
+          }[];
+        };
+        Returns: { booking_id: string; pnr_code: string; total_price: number }[];
+      };
       cancel_booking: {
         Args: { p_booking_id: string };
         Returns: { booking_id: string; status: BookingStatus }[];

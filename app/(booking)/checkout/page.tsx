@@ -9,11 +9,18 @@ import { formatCurrency, formatDateTime } from "@/lib/utils/format";
 
 export const dynamic = "force-dynamic";
 
+function parsePassengerCount(value?: string) {
+  const count = Number(value ?? 1);
+  if (!Number.isInteger(count) || count < 1) return 1;
+  return Math.min(count, 6);
+}
+
 export default async function CheckoutPage({
   searchParams,
 }: {
-  searchParams: { flightId?: string };
+  searchParams: { flightId?: string; passengers?: string };
 }) {
+  const passengerCount = parsePassengerCount(searchParams.passengers);
   if (!searchParams.flightId) {
     return (
       <AppShell>
@@ -40,9 +47,15 @@ export default async function CheckoutPage({
       <div className="space-y-6">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-teal-700">Checkout</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Choose your seat</h1>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+            Choose {passengerCount === 1 ? "your seat" : `your ${passengerCount} seats`}
+          </h1>
         </div>
-        <PassengerForm flightId={flightResult.data.id}>
+        <PassengerForm
+          flightId={flightResult.data.id}
+          passengerCount={passengerCount}
+          seats={seatResult.data ?? []}
+        >
           <section className="space-y-4">
             <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-4">
@@ -66,7 +79,11 @@ export default async function CheckoutPage({
                 {seatResult.error.message}
               </p>
             ) : (
-              <SeatMap flightId={flightResult.data.id} initialSeats={seatResult.data ?? []} />
+              <SeatMap
+                flightId={flightResult.data.id}
+                initialSeats={seatResult.data ?? []}
+                passengerCount={passengerCount}
+              />
             )}
           </section>
         </PassengerForm>

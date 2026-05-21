@@ -24,10 +24,22 @@ function SubmitButton({ mode }: { mode: "signin" | "signup" }) {
   );
 }
 
-export function AuthForm({ next }: { next: string }) {
+export function AuthForm({
+  next,
+  verified,
+  verificationError,
+}: {
+  next: string;
+  verified?: boolean;
+  verificationError?: boolean;
+}) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(() => {
+    if (verified) return "Email verified. You can sign in now.";
+    if (verificationError) return "Verification link is invalid or expired. Try signing up again.";
+    return null;
+  });
   const [signInState, signInAction] = useFormState(signIn, initialAuthState);
   const [signUpState, signUpAction] = useFormState(signUp, initialAuthState);
 

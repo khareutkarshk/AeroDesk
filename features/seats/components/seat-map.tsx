@@ -23,16 +23,23 @@ const classOrder: SeatClass[] = ["first", "business", "economy"];
 export function SeatMap({
   initialSeats,
   flightId,
+  passengerCount,
   currentSeatId,
 }: {
   initialSeats: Seat[];
   flightId: string;
+  passengerCount: number;
   currentSeatId?: string;
 }) {
   const [seats, setSeats] = useState(initialSeats);
   const [isPending, startTransition] = useTransition();
-  const selectedSeatId = useFlightStore((state) => state.selectedSeatId);
-  const selectSeat = useFlightStore((state) => state.selectSeatOptimistic);
+  const selectedSeatIds = useFlightStore((state) => state.selectedSeatIds);
+  const toggleSeat = useFlightStore((state) => state.toggleSeat);
+  const clearSeats = useFlightStore((state) => state.clearSeats);
+
+  useEffect(() => {
+    clearSeats();
+  }, [flightId, passengerCount, clearSeats]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -70,11 +77,13 @@ export function SeatMap({
     [seats],
   );
 
-  const selected = seats.find((seat) => seat.id === selectedSeatId);
+  const selectedSeats = selectedSeatIds
+    .map((id) => seats.find((seat) => seat.id === id))
+    .filter((seat): seat is Seat => Boolean(seat));
+  const seatsRemaining = passengerCount - selectedSeatIds.length;
 
   return (
     <div className="space-y-5">
-      <input name="seatId" type="hidden" value={selectedSeatId ?? ""} />
       <div className="rounded-lg border border-slate-200 bg-white p-4">
         <div className="mb-4 flex flex-wrap gap-3 text-xs text-slate-600">
           <Legend color="bg-white border-slate-300" label="Available" />
@@ -97,11 +106,11 @@ export function SeatMap({
                         <SeatButton
                           key={seat.id}
                           isCurrent={seat.id === currentSeatId}
-                          isSelected={seat.id === selectedSeatId}
+                          isSelected={selectedSeatIds.includes(seat.id)}
                           isTransitioning={isPending}
                           seat={seat}
                           onSelect={() => {
-                            startTransition(() => selectSeat(seat.id));
+                            startTransition(() => toggleSeat(seat.id, passengerCount));
                           }}
                           withAisle={index === 3}
                         />
@@ -114,14 +123,29 @@ export function SeatMap({
           </div>
         </div>
       </div>
-      {selected ? (
-        <p className="text-sm text-slate-700">
-          Selected {selected.seat_number} · {classLabel[selected.class]} · Extra fee{" "}
-          {formatCurrency(selected.extra_fee)}
-        </p>
+      {selectedSeats.length > 0 ? (
+        <div className="space-y-1 text-sm text-slate-700">
+          <p>
+            Selected {selectedSeats.length} of {passengerCount} seat
+            {passengerCount === 1 ? "" : "s"}.
+          </p>
+          <ul className="list-inside list-disc text-slate-600">
+            {selectedSeats.map((seat) => (
+              <li key={seat.id}>
+                {seat.seat_number} · {classLabel[seat.class]} · Extra fee{" "}
+                {formatCurrency(seat.extra_fee)}
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : (
-        <p className="text-sm text-slate-500">Select one available seat to continue.</p>
+        <p className="text-sm text-slate-500">
+          Select {passengerCount} seat{passengerCount === 1 ? "" : "s"} to continue.
+        </p>
       )}
+      {seatsRemaining > 0 && selectedSeats.length > 0 ? (
+        <p className="text-sm text-amber-700">Choose {seatsRemaining} more seat{seatsRemaining === 1 ? "" : "s"}.</p>
+      ) : null}
     </div>
   );
 }
